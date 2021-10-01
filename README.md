@@ -1,21 +1,52 @@
 # Authentification
 test
-<!DOCTYPE html>
-<html>
-<lang="fr">
+
+<?php
 	
-	<head>
-	<title>Se connecter</title>
-	</head>
+	$login = $_POST[ 'identifiant' ] ;
+	$mdp = $_POST[ 'mdp' ] ;
 	
-	<body>
-		<form action="/sbateliers/controleurs/ctrl-connecter.php" method=POST >
-		<label>nom de connexion</label>
-		<input name=identifiant type=identifiant></input>
-		<label>mot de passe</label>
-		<input name=mdp type=mdp></input>
+	try {
+
+		$bd = new PDO(
+						'mysql:host=localhost;dbname=sbateliers' ,
+						'sanayabio' ,
+						'sb2021'
+			) ;
+			
+		$sql = 'select numero , nom , prenom '
+			 . 'from client '
+			 . 'where adresse_electronique = :login '
+			 . 'and mot_de_passe = :mdp' ;
+			 
+		$st = $bd -> prepare( $sql ) ;
 		
-		<button type="submit">Connexion</button>
-	</form>
-	</body>	
-</html>
+		$st -> execute( array( 
+								':login' => $login ,
+								':mdp' => $mdp 
+						) 
+					) ;
+		$resultat = $st -> fetchall() ;
+			
+		unset( $bd ) ;
+		
+		if( count( $resultat ) == 1 ) {
+			session_start() ;
+			$_SESSION[ 'numero' ] = $resultat[0]['numero'] ;
+			$_SESSION[ 'nom' ] = $resultat[0]['nom'] ;
+			$_SESSION[ 'prenom' ] = $resultat[0]['prenom'] ;
+			
+			$_SESSION[ 'login' ] = $login ;
+			
+			header( 'Location: ../vues/vue-liste-ateliers.php' ) ;
+		}
+		else {
+			header( 'Location: ../index.php?echec=1&login=' . $login ) ;
+		}
+	}
+	catch( PDOException $e ){
+		
+		header( 'Location: ../index.php?echec=0' ) ;
+	}
+
+?>
